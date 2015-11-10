@@ -51,7 +51,7 @@ var replaceInclude = require('gulp-replace-include');
 
 gulp.task('default',function() {
 	
-	return gulp.src('../src/*.html')
+	return gulp.src('../src/**/*.html')
 		.pipe(replaceInclude({
 			src: '../src/',
 			dist: '../dist/',
@@ -81,7 +81,7 @@ Will convert two files `src/test/1.html` & `src/test/2.html`, each with content:
     <link rel="canonical" href="example.com/@@path@@file">
   </head>
   <body>
-    <h1>@@hello World</h1>
+    <h1>Test Page: @@file</h1>
 	<p>@@include(../welcome.txt)</p>
   </body>
 </html>
@@ -90,7 +90,7 @@ Will convert two files `src/test/1.html` & `src/test/2.html`, each with content:
 With a text file `dist/welcome.txt`:
 
 ```text
-Welcome to this test page (@@file)
+@@hello World
 ```
 
 Will produce:
@@ -111,8 +111,8 @@ Will produce:
     <link rel="canonical" href="example.com/test/1.html">
   </head>
   <body>
-    <h1>Howdy World</h1>
-	<p>Welcome to this test page (1.html)</p>
+    <h1>Test Page: 1.html</h1>
+	<p>Howdy World</p>
   </body>
 </html>
 ```
@@ -126,8 +126,8 @@ Will produce:
     <link rel="canonical" href="example.com/test/2.html">
   </head>
   <body>
-    <h1>Howdy World</h1>
-	<p>Welcome to this test page (2.html)</p>
+    <h1>Test Page: 2.html</h1>
+	<p>Howdy World</p>
   </body>
 </html>
 ```

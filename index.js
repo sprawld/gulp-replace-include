@@ -1,13 +1,15 @@
-/*
+/*!
  * gulp-replace-include
+ * https://github.com/sprawld/gulp-replace-include/
+ * MIT License
  */
-
 'use strict';
 
 var fs = require('fs'),
 	glob = require('glob'),
 	through = require('through2'),
 	gutil = require('gulp-util'),
+	path = require('path'),
 	_ = require('lodash');
 
 var plugin = 'gulp-replace-include';
@@ -15,7 +17,6 @@ var plugin = 'gulp-replace-include';
 function replaceString(a,b,c) {
 	return a.replace(new RegExp(b.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),'g'),c.replace(/\$/g,'$$$$'));
 }
-
 
 module.exports = function(opts) {
 
@@ -28,9 +29,11 @@ module.exports = function(opts) {
 		pages: {},
 	},opts);
 
-	var p = options.prefix,
+	var prefix = options.prefix,
 		global = options.global,
-		include = new RegExp(p.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")+'include\\(([^\)]*)\\)','g');
+		prefixReg = prefix.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),
+		includeReg = new RegExp(prefixReg+'include\\(([^\)]*)\\)','g'),
+		requireReg = new RegExp(prefixReg+'require\\(([^\)]*)\\)','g');
 
 	return through.obj(function (file, enc, cb) {
 
@@ -46,35 +49,52 @@ module.exports = function(opts) {
 		}
 
 		// Get file contents & path
-		var contents = file.contents.toString(),
+		var base = path.join(file.cwd, options.src),
 			root = file.cwd,
-			base = file.base.replace(root,'').replace(/^[\\\/]/,'').replace(/\\/g,'/'),
-			path = base.replace(options.src,''),
-			filename = file.path.replace(file.base,'');
-		
+			requireList = [],
+			includeBase = path.join(file.cwd, options.dist),
+			currentPath = path.relative(base, file.base).replace(/\\/g,'/').replace(/^(..*)$/,'$1/'),
+			includePath = path.join(includeBase, currentPath),
+			filename = file.path.replace(file.base,''),
+			currentFile = path.join(currentPath,filename).replace(/\\/g,'/'),
+			result = file.contents.toString();
+
 		// File includes (@@include)
-		var result = contents.replace(include,function(a,b) {
-			var includePath = (options.dist) ? options.dist+path : base
-			return glob.sync(includePath+b).map(function(c) {
-				return fs.readFileSync(c).toString();
-			}).join('');
-		});
+		while(result.match(includeReg)) {
+			result = result.replace(includeReg,function(a,b) {
+				return glob.sync(includePath+b).map(function(c) {
+					return fs.readFileSync(c).toString();
+				}).join('');
+			});
+		}
+
+		// File requires (@@require)
+		while(result.match(requireReg)) {
+			result = result.replace(requireReg,function(a,b) {
+				var fileList = glob.sync(includePath+b).map(path.normalize).filter(function(c) {
+					return requireList.indexOf(c) == -1;
+				});
+				requireList = requireList.concat(fileList);
+				
+				return fileList.map(function(c) {
+					return fs.readFileSync(c).toString();
+				}).join('');
+			});
+		}
 		
 		// @@file and @@path
-		result = replaceString(result,p+'file',filename);
-		result = replaceString(result,p+'path',path);
+		result = replaceString(result,prefix+'file',filename);
+		result = replaceString(result,prefix+'path',currentPath);
 		
 		// Replace global variables
 		_.each(global,function(a,b) {
-			result = replaceString(result,p+b,a);
+			result = replaceString(result,prefix+b,a);
 		});
 
 		// Replace page-specific variables
-		if(_.has(options.pages,path+filename)) {
-
-		_.each(options.pages[path+filename],function(a,b) {
-				//result = result.replace(p+b,a);
-				result = replaceString(result,p+b,a);
+		if(_.has(options.pages,currentFile)) {
+			_.each(options.pages[currentFile],function(a,b) {
+				result = replaceString(result,prefix+b,a);
 			});
 		}	
 		

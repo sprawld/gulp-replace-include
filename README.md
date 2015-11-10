@@ -24,7 +24,7 @@ There are 5 types of variable:
 }
 ```
 
-If the base folder for your source files is not where your gulpfile is, you can set the `src` directory.
+If the base folder for all your source files is not where your gulpfile is, you can set the `src` directory.
 You can also provide a different directory (`dist`) for the file includes and requires.
 Useful if you want to, for example, inline minified CSS or Javascript.
 
@@ -51,7 +51,7 @@ var replaceInclude = require('gulp-replace-include');
 
 gulp.task('default',function() {
 	
-	return gulp.src('src/*.html')
+	return gulp.src('../src/*.html')
 		.pipe(replaceInclude({
 			src: '../src/',
 			dist: '../dist/',
@@ -67,7 +67,7 @@ gulp.task('default',function() {
 				}
 			}
 		}))
-		.pipe(gulp.dest('dist/'));
+		.pipe(gulp.dest('../dist/'));
 	
 });
 ```

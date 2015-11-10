@@ -88,7 +88,7 @@ Will convert two files `src/test1.html` & `src/test2.html`, each with content:
 </html>
 ```
 
-With a text file `src/welcome.txt`:
+With a text file `dist/welcome.txt`:
 
 ```text
 Welcome to this test page (@@file)

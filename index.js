@@ -12,6 +12,11 @@ var fs = require('fs'),
 
 var plugin = 'gulp-replace-include';
 
+function replaceString(a,b,c) {
+	return a.replace(new RegExp(b.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),'g'),c.replace(/\$/g,'$$$$'));
+}
+
+
 module.exports = function(opts) {
 
 	// defaults
@@ -25,10 +30,11 @@ module.exports = function(opts) {
 
 	var p = options.prefix,
 		global = options.global,
-		include = new RegExp(p+'include\\(([^\)]*)\\)');
+		include = new RegExp(p.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")+'include\\(([^\)]*)\\)','g');
 
 	return through.obj(function (file, enc, cb) {
 
+		// Check file
 		if (file.isNull()) {
 			this.push(file);
 			return cb();
@@ -39,29 +45,37 @@ module.exports = function(opts) {
 			return cb();
 		}
 
-
+		// Get file contents & path
 		var contents = file.contents.toString(),
 			root = file.cwd,
 			base = file.base.replace(root,'').replace(/^[\\\/]/,'').replace(/\\/g,'/'),
 			path = base.replace(options.src,''),
 			filename = file.path.replace(file.base,'');
 		
-		//include files
+		// File includes (@@include)
 		var result = contents.replace(include,function(a,b) {
-			return glob.sync(options.dist+path+b).map(function(c) {
+			var includePath = (options.dist) ? options.dist+path : base
+			return glob.sync(includePath+b).map(function(c) {
 				return fs.readFileSync(c).toString();
 			}).join('');
-		}).replace(p+'file',filename).replace(p+'path',path);
-
-		for(var i in global) {
-			result = result.replace(p+i,global[i]);
-		}
+		});
 		
+		// @@file and @@path
+		result = replaceString(result,p+'file',filename);
+		result = replaceString(result,p+'path',path);
+		
+		// Replace global variables
+		_.each(global,function(a,b) {
+			result = replaceString(result,p+b,a);
+		});
+
+		// Replace page-specific variables
 		if(_.has(options.pages,path+filename)) {
-			var change = options.pages[path+filename];
-			for(var i in change) {
-				result = result.replace(p+i,change[i]);
-			}
+
+		_.each(options.pages[path+filename],function(a,b) {
+				//result = result.replace(p+b,a);
+				result = replaceString(result,p+b,a);
+			});
 		}	
 		
 		file.contents = new Buffer(result);

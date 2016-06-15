@@ -62,7 +62,7 @@ module.exports = function(opts) {
 		// File includes (@@include)
 		while(result.match(includeReg)) {
 			result = result.replace(includeReg,function(a,b) {
-				return glob.sync(includePath+b.replace(/\'|\"/g), '').map(function(c) {
+				return glob.sync(includePath+b.replace(/\'|\"/g, '')).map(function(c) {
 					return fs.readFileSync(c).toString();
 				}).join('');
 			});
@@ -71,7 +71,7 @@ module.exports = function(opts) {
 		// File requires (@@require)
 		while(result.match(requireReg)) {
 			result = result.replace(requireReg,function(a,b) {
-				var fileList = glob.sync(includePath+b.replace(/\'|\"/g), '')).map(path.normalize).filter(function(c) {
+				var fileList = glob.sync(includePath+b.replace(/\'|\"/g, '')).map(path.normalize).filter(function(c) {
 					return requireList.indexOf(c) == -1;
 				});
 				requireList = requireList.concat(fileList);

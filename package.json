@@ -11,7 +11,7 @@
   "dependencies": {
     "glob": "^5.0.15",
     "gulp-util": "^3.0.7",
-    "lodash": "^3.10.1",
+    "lodash": "^4.17.19",
     "through2": "^2.0.0"
   },
   "devDependencies": {},
